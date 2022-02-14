@@ -1,51 +1,61 @@
-import { useState } from 'react';
-import './App.css';
-import TodoForm from './Components/TodoForm';
-import TodoItem from './Components/TodoItem';
+import React, { useState } from "react";
+import "./App.css";
+import Axios from "axios";
+import { v4 as uuidv4 } from "uuid";
+import Recipe from "./Recipe";
+import Alert from "./Alert";
 
 function App() {
-const [todos,setTodos]=useState([])
+  const [query, setQuery] = useState("");
+  const [recipes, setRecipes] = useState([]);
+  const [alert, setAlert] = useState("");
 
-  const addTodo=(text)=>{
-let id=1;
-if(todos.length > 0){
-  id = todos[0].id + 1
-}
-let todo={
-  id: id,
-  text: text,
-  completed:false
-}
-let newTodos=[todo, ...todos]
-console.log(newTodos)
-setTodos(newTodos)
+  const APP_ID = "4e9f05eb";
+  const APP_KEY = "9b904d703fa0d46a88ce1ac63f29f498";
+
+  const url = `https://api.edamam.com/search?q=${query}&app_id=${APP_ID}&app_key=${APP_KEY}`;
+
+  const getData = async () => {
+    if (query !== "") {
+      const result = await Axios.get(url);
+      if (!result.data.more) {
+        return setAlert("No food with such name");
+      }
+      console.log(result);
+      setRecipes(result.data.hits);
+      setQuery("");
+      setAlert("");
+    } else {
+      setAlert("Please fill the form");
+    }
   };
 
-  const removeTodo=(id)=>{
-    let updatedTodos = [...todos].filter((todo)=> todo.id!== id)
-    setTodos(updatedTodos)
+  const onChange = e => setQuery(e.target.value);
 
+  const onSubmit = e => {
+    e.preventDefault();
+    getData();
+  };
 
-  }
-  const completeTodo=(id)=>{
-    let updatedTodos=todos.map((todo)=>{
-      if(todo.id === id){
-        todo.completed = !todo.completed
-      }
-      return todo
-    })
-    setTodos(updatedTodos)
-  }
   return (
-    <div className="todo-app">
-      <h1>Todo List</h1>
-      <TodoForm addTodo={addTodo}/>
-      <hr className='seperator'/>
-      {todos.map((todo)=>{
-        return(
-          <TodoItem removeTodo={removeTodo}  completeTodo={completeTodo} todo={todo} key={todo.id}/>
-        )
-      })}
+    <div className="App">
+      <h1>Food Searching App</h1>
+      <form onSubmit={onSubmit} className="search-form">
+        {alert !== "" && <Alert alert={alert} />}
+        <input
+          type="text"
+          name="query"
+          onChange={onChange}
+          value={query}
+          autoComplete="off"
+          placeholder="Search Food"
+        />
+        <input type="submit" value="Search" />
+      </form>
+      <div className="recipes">
+        {recipes !== [] &&
+          recipes.map(recipe => <Recipe key={uuidv4()} recipe={recipe} />)}
+      </div>
     </div>
   );
 }
